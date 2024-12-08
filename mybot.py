@@ -1,7 +1,10 @@
 import logging
 import requests
+import os
+
 from telegram import Update, ReplyKeyboardRemove, KeyboardButton, ReplyKeyboardMarkup
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, CallbackContext
+from telegram import Bot
 
 # Настройка логирования
 logging.basicConfig(
@@ -144,12 +147,17 @@ def get_country_flag(currency_code):
     }
     return flags.get(currency_code, "🏳️")  # Если флаг не найден, используем нейтральный флаг
 
+# Получаем токен из переменной окружения
+token = os.getenv('TELEGRAM_TOKEN')
+
 # Основной блок запуска бота
 if __name__ == "__main__":
-    application = ApplicationBuilder().token("7550339760:AAHD-IdefcXzLER99r9_6zN32GT8g2HlnvU").build()
+    # Создаем объект application с токеном
+    application = ApplicationBuilder().token(token).build()
 
     # Добавляем обработчики
     application.add_handler(CommandHandler("start", start))
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_button))
 
+    # Запускаем бота
     application.run_polling()
