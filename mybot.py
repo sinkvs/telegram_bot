@@ -1,7 +1,9 @@
 import logging
 import requests
+import os
 from telegram import Update
 from telegram.ext import Application, CommandHandler, CallbackContext
+from telegram import Bot
 
 # Настроим логирование
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -89,8 +91,8 @@ async def get_exchange_rate(update: Update, context: CallbackContext):
 
 # Основная функция запуска бота
 def main():
-    # Вставьте свой токен
-    token = '7550339760:AAHD-IdefcXzLER99r9_6zN32GT8g2HlnvU'
+    # Получаем токен из переменной окружения
+    token = os.getenv('TELEGRAM_TOKEN')
     
     # Создаем экземпляр Application и передаем ему токен
     application = Application.builder().token(token).build()
