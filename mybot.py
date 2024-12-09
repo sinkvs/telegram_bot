@@ -1,10 +1,10 @@
 import logging
-import requests
 import os
-
-from telegram import Update, ReplyKeyboardRemove, KeyboardButton, ReplyKeyboardMarkup
+import requests
+from flask import Flask, request
+from telegram import Update, Bot
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, CallbackContext
-from telegram import Bot
+from telegram import ReplyKeyboardMarkup, KeyboardButton, ReplyKeyboardRemove
 
 # Настройка логирования
 logging.basicConfig(
@@ -13,7 +13,16 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# Приветствие
+# Создаем Flask-приложение
+app = Flask(__name__)
+
+# Получаем токен из переменной окружения
+token = os.getenv('TELEGRAM_TOKEN')
+
+# Создаем объект бота
+bot = Bot(token)
+
+# Функция для обработки стартовой команды
 async def start(update: Update, context: CallbackContext):
     user = update.effective_user
     logger.info(f"Пользователь {user.username} ({user.full_name}) подключился.")
@@ -147,17 +156,22 @@ def get_country_flag(currency_code):
     }
     return flags.get(currency_code, "🏳️")  # Если флаг не найден, используем нейтральный флаг
 
-# Получаем токен из переменной окружения
-token = os.getenv('TELEGRAM_TOKEN')
+# Настройка webhook для Render
+def set_webhook():
+    webhook_url = os.getenv("WEBHOOK_URL")  # URL для вебхуков, настроенный на Render
+    bot.set_webhook(url=webhook_url)
 
-# Основной блок запуска бота
+# Flask route для обработки запросов
+@app.route('/webhook', methods=['POST'])
+def webhook():
+    json_str = request.get_data().decode('UTF-8')
+    update = Update.de_json(json_str, bot)
+    application.process_update(update)
+    return 'OK'
+
+# Запуск приложения Flask
 if __name__ == "__main__":
-    # Создаем объект application с токеном
-    application = ApplicationBuilder().token(token).build()
-
-    # Добавляем обработчики
-    application.add_handler(CommandHandler("start", start))
-    application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_button))
-
-    # Запускаем бота
-    application.run_polling()
+    # Устанавливаем webhook
+    set_webhook()
+    # Запуск Flask приложения на порту, предоставленном Render
+    app.run(host='0.0.0.0', port=int(os.getenv('PORT', 5000)))
